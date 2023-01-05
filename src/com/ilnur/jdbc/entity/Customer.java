@@ -1,6 +1,6 @@
 package com.ilnur.jdbc.entity;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 public class Customer {
 
@@ -8,14 +8,14 @@ public class Customer {
     private String firstName;
     private String lastName;
     private String email;
-    private Date birthdate;
+    private LocalDate birthdate;
     private String sex;
     private String city;
 
     public Customer() {
     }
 
-    public Customer(int id, String firstName, String lastName, String email, Date birthdate, String sex, String city) {
+    public Customer(int id, String firstName, String lastName, String email, LocalDate birthdate, String sex, String city) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -57,11 +57,11 @@ public class Customer {
         this.email = email;
     }
 
-    public Date getBirthdate() {
+    public LocalDate getBirthdate() {
         return birthdate;
     }
 
-    public void setBirthdate(Date birthdate) {
+    public void setBirthdate(LocalDate birthdate) {
         this.birthdate = birthdate;
     }
 
