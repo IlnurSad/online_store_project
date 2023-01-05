@@ -3,7 +3,6 @@ package com.ilnur.jdbc;
 import com.ilnur.jdbc.dao.CustomerDao;
 import com.ilnur.jdbc.entity.Customer;
 
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 
 public class DaoRunner {
