@@ -93,21 +93,6 @@ public class CustomerDao {
         }
     }
 
-    public Optional<Customer> findById(int id) {
-        try (var connection = ConnectionManager.get();
-             var preparedStatement = connection.prepareStatement(FIND_BY_ID_SQL)) {
-            preparedStatement.setInt(1, id);
-            var resultSet = preparedStatement.executeQuery();
-            Customer customer = null;
-            if (resultSet.next()) {
-                customer = buildCustomer(resultSet);
-            }
-            return Optional.ofNullable(customer);
-        } catch (SQLException throwables) {
-            throw new DaoException(throwables);
-        }
-    }
-
     private static Customer buildCustomer(ResultSet resultSet) throws SQLException {
         return new Customer(
                 resultSet.getInt("id"),
@@ -129,6 +114,21 @@ public class CustomerDao {
                 customers.add(buildCustomer(resultSet));
             }
             return customers;
+        } catch (SQLException throwables) {
+            throw new DaoException(throwables);
+        }
+    }
+
+    public Optional<Customer> findById(int id) {
+        try (var connection = ConnectionManager.get();
+             var preparedStatement = connection.prepareStatement(FIND_BY_ID_SQL)) {
+            preparedStatement.setInt(1, id);
+            var resultSet = preparedStatement.executeQuery();
+            Customer customer = null;
+            if (resultSet.next()) {
+                customer = buildCustomer(resultSet);
+            }
+            return Optional.ofNullable(customer);
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
