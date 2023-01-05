@@ -10,13 +10,13 @@ public class CustomerDao {
 
     private static final CustomerDao INSTANCE = new CustomerDao();
     private static final String DELETE_SQL = """
-            INSERT INTO customer (first_name, last_name, email, birthdate, sex, city) 
-            VALUES (?, ?, ?, ?, ?, ?);
+            DELETE FROM customer
+            WHERE id = ?
             """;
 
     private static final String SAVE_SQL = """
-            DELETE FROM customer
-            WHERE id = ?
+            INSERT INTO customer (first_name, last_name, email, birthdate, sex, city) 
+            VALUES (?, ?, ?, ?, ?, ?);
             """;
     private CustomerDao() {
     }
