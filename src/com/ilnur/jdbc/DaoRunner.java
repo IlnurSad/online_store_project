@@ -5,11 +5,23 @@ import com.ilnur.jdbc.entity.Customer;
 
 import java.time.LocalDate;
 
+
 public class DaoRunner {
 
     public static void main(String[] args) {
-        saveTest();
-        deleteTest();
+        var customers = CustomerDao.getInstance().findAll();
+        System.out.println(customers);
+    }
+
+    private static void updateTest() {
+        var customerDao = CustomerDao.getInstance();
+        var maybeCustomer = customerDao.findById(2);
+        System.out.println(maybeCustomer);
+
+        maybeCustomer.ifPresent(customer -> {
+            customer.setCity("Moscow");
+            customerDao.update(customer);
+        });
     }
 
     private static void deleteTest() {
@@ -28,7 +40,7 @@ public class DaoRunner {
         customer.setSex("Male");
         customer.setCity("Kazan");
 
-        var savedTicket = customerDao.save(customer);
-        System.out.println(savedTicket);
+        var savedCustomer = customerDao.save(customer);
+        System.out.println(savedCustomer);
     }
 }
