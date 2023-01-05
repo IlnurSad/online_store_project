@@ -10,12 +10,12 @@ public class CustomerDao {
 
     private static final CustomerDao INSTANCE = new CustomerDao();
     private static final String DELETE_SQL = """
-            DELETE FROM customer
+            DELETE FROM store_catalog.customer
             WHERE id = ?
             """;
 
     private static final String SAVE_SQL = """
-            INSERT INTO customer (first_name, last_name, email, birthdate, sex, city) 
+            INSERT INTO store_catalog.customer (first_name, last_name, email, birthdate, sex, city) 
             VALUES (?, ?, ?, ?, ?, ?);
             """;
     private CustomerDao() {
