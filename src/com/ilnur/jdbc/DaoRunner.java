@@ -1,6 +1,7 @@
 package com.ilnur.jdbc;
 
 import com.ilnur.jdbc.dao.CustomerDao;
+import com.ilnur.jdbc.dto.CustomerFilter;
 import com.ilnur.jdbc.entity.Customer;
 
 import java.time.LocalDate;
@@ -9,7 +10,8 @@ import java.time.LocalDate;
 public class DaoRunner {
 
     public static void main(String[] args) {
-        var customers = CustomerDao.getInstance().findAll();
+        var customerFilter = new CustomerFilter(10, 0);
+        var customers = CustomerDao.getInstance().findAll(customerFilter);
         System.out.println(customers);
     }
 

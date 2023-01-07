@@ -1,100 +1,96 @@
 package com.ilnur.jdbc.dao;
 
-import com.ilnur.jdbc.dto.CustomerFilter;
-import com.ilnur.jdbc.entity.Customer;
+import com.ilnur.jdbc.dto.ReviewFilter;
+import com.ilnur.jdbc.entity.Review;
 import com.ilnur.jdbc.exception.DaoException;
 import com.ilnur.jdbc.util.ConnectionManager;
 
-import java.sql.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class CustomerDao {
+public class ReviewDao {
 
-    private static final CustomerDao INSTANCE = new CustomerDao();
+    private static final ReviewDao INSTANCE = new ReviewDao();
+
     private static final String DELETE_SQL = """
-            DELETE FROM store_catalog.customer
+            DELETE FROM store_catalog.review
             WHERE id = ?
             """;
 
     private static final String SAVE_SQL = """
-            INSERT INTO store_catalog.customer (first_name, last_name, email, birthdate, sex, city)
-            VALUES (?, ?, ?, ?, ?, ?);
+            INSERT INTO store_catalog.review (product_id, costumer_id, content_rv, rv_created_at)
+            VALUES (?, ?, ?, ?);
             """;
     private static final String UPDATE_SQL = """
-            UPDATE store_catalog.customer
-            SET first_name = ?,
-                last_name = ?,
-                email = ?,
-                birthdate = ?,
-                sex = ?,
-                city = ?
+            UPDATE store_catalog.review
+            SET product_id = ?,
+                costumer_id = ?,
+                content_rv = ?,
+                rv_created_at = ?
             WHERE id = ?;
             """;
 
     private static final String FIND_ALL_SQL = """
             SELECT id,
-                first_name,
-                last_name,
-                email,
-                birthdate,
-                sex,
-                city
-            FROM store_catalog.customer
+                product_id,
+                costumer_id,
+                content_rv,
+                rv_created_at
+            FROM store_catalog.review
             """;
     private static final String FIND_BY_ID_SQL = FIND_ALL_SQL + """
             WHERE id = ?;
             """;
 
-    private CustomerDao() {
+    private ReviewDao() {
     }
 
     public boolean delete(int id) {
         try (var connection = ConnectionManager.get(); var preparedStatement = connection.prepareStatement(DELETE_SQL)) {
-            preparedStatement.setInt(1, id);
+            preparedStatement.setLong(1, id);
             return preparedStatement.executeUpdate() > 0;
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public Customer save(Customer customer) {
+    public Review save(Review review) {
         try (var connection = ConnectionManager.get(); var preparedStatement = connection.prepareStatement(SAVE_SQL, Statement.RETURN_GENERATED_KEYS)) {
-            preparedStatement.setString(1, customer.getFirstName());
-            preparedStatement.setString(2, customer.getLastName());
-            preparedStatement.setString(3, customer.getEmail());
-            preparedStatement.setDate(4, Date.valueOf(customer.getBirthdate()));
-            preparedStatement.setString(5, customer.getSex());
-            preparedStatement.setString(6, customer.getCity());
+            preparedStatement.setLong(1, review.getProductId());
+            preparedStatement.setInt(2, review.getCostumerId());
+            preparedStatement.setString(3, review.getContentRv());
+            preparedStatement.setTimestamp(4, Timestamp.valueOf(review.getRvCreatedAt()));
             preparedStatement.executeUpdate();
             var generatedKeys = preparedStatement.getGeneratedKeys();
             if (generatedKeys.next()) {
-                customer.setId(generatedKeys.getInt("id"));
+                review.setId(generatedKeys.getLong("id"));
             }
-            return customer;
+            return review;
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public void update(Customer customer) {
+    public void update(Review review) {
         try (var connection = ConnectionManager.get();
              var preparedStatement = connection.prepareStatement(UPDATE_SQL)) {
-            preparedStatement.setString(1, customer.getFirstName());
-            preparedStatement.setString(2, customer.getLastName());
-            preparedStatement.setString(3, customer.getEmail());
-            preparedStatement.setDate(4, Date.valueOf(customer.getBirthdate()));
-            preparedStatement.setString(5, customer.getSex());
-            preparedStatement.setString(6, customer.getCity());
-            preparedStatement.setInt(7, customer.getId());
+            preparedStatement.setLong(1, review.getProductId());
+            preparedStatement.setInt(2, review.getCostumerId());
+            preparedStatement.setString(3, review.getContentRv());
+            preparedStatement.setTimestamp(4, Timestamp.valueOf(review.getRvCreatedAt()));
+            preparedStatement.setLong(5, review.getId());
             preparedStatement.executeUpdate();
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public List<Customer> findAll(CustomerFilter filter) {
+    public List<Review> findAll(ReviewFilter filter) {
         List<Object> parameters = new ArrayList<>();
         parameters.add(filter.limit());
         parameters.add(filter.offset());
@@ -109,58 +105,56 @@ public class CustomerDao {
                 preparedStatement.setObject(i + 1, parameters.get(i));
             }
             var resultSet = preparedStatement.executeQuery();
-            List<Customer> customers = new ArrayList<>();
+            List<Review> reviews = new ArrayList<>();
             while (resultSet.next()) {
-                customers.add(buildCustomer(resultSet));
+                reviews.add(buildReview(resultSet));
             }
-            return customers;
+            return reviews;
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public List<Customer> findAll() {
+    public List<Review> findAll() {
         try (var connection = ConnectionManager.get();
              var preparedStatement = connection.prepareStatement(FIND_ALL_SQL)) {
             var resultSet = preparedStatement.executeQuery();
-            List<Customer> customers = new ArrayList<>();
+            List<Review> reviews = new ArrayList<>();
             while (resultSet.next()) {
-                customers.add(buildCustomer(resultSet));
+                reviews.add(buildReview(resultSet));
             }
-            return customers;
+            return reviews;
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public Optional<Customer> findById(int id) {
+    public Optional<Review> findById(int id) {
         try (var connection = ConnectionManager.get();
              var preparedStatement = connection.prepareStatement(FIND_BY_ID_SQL)) {
-            preparedStatement.setInt(1, id);
+            preparedStatement.setLong(1, id);
             var resultSet = preparedStatement.executeQuery();
-            Customer customer = null;
+            Review review = null;
             if (resultSet.next()) {
-                customer = buildCustomer(resultSet);
+                review = buildReview(resultSet);
             }
-            return Optional.ofNullable(customer);
+            return Optional.ofNullable(review);
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public static CustomerDao getInstance() {
+    public static ReviewDao getInstance() {
         return INSTANCE;
     }
 
-    private static Customer buildCustomer(ResultSet resultSet) throws SQLException {
-        return new Customer(
-                resultSet.getInt("id"),
-                resultSet.getString("first_name"),
-                resultSet.getString("last_name"),
-                resultSet.getString("email"),
-                resultSet.getDate("birthdate").toLocalDate(),
-                resultSet.getString("sex"),
-                resultSet.getString("city")
+    private static Review buildReview(ResultSet resultSet) throws SQLException {
+        return new Review(
+                resultSet.getLong("id"),
+                resultSet.getLong("product_id"),
+                resultSet.getInt("customer_id"),
+                resultSet.getString("content_rv"),
+                resultSet.getTimestamp("rv_created_at").toLocalDateTime()
         );
     }
 }

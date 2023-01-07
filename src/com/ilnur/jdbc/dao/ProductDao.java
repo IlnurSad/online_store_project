@@ -1,100 +1,96 @@
 package com.ilnur.jdbc.dao;
 
-import com.ilnur.jdbc.dto.CustomerFilter;
-import com.ilnur.jdbc.entity.Customer;
+import com.ilnur.jdbc.dto.ProductFilter;
+import com.ilnur.jdbc.entity.Product;
 import com.ilnur.jdbc.exception.DaoException;
 import com.ilnur.jdbc.util.ConnectionManager;
 
-import java.sql.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class CustomerDao {
+public class ProductDao {
 
-    private static final CustomerDao INSTANCE = new CustomerDao();
+    private static final ProductDao INSTANCE = new ProductDao();
+
     private static final String DELETE_SQL = """
-            DELETE FROM store_catalog.customer
+            DELETE FROM store_catalog.product
             WHERE id = ?
             """;
 
     private static final String SAVE_SQL = """
-            INSERT INTO store_catalog.customer (first_name, last_name, email, birthdate, sex, city)
-            VALUES (?, ?, ?, ?, ?, ?);
+            INSERT INTO store_catalog.product (product_name, price, description, quantity)
+            VALUES (?, ?, ?, ?);
             """;
     private static final String UPDATE_SQL = """
-            UPDATE store_catalog.customer
-            SET first_name = ?,
-                last_name = ?,
-                email = ?,
-                birthdate = ?,
-                sex = ?,
-                city = ?
+            UPDATE store_catalog.product
+            SET product_name = ?,
+                price = ?,
+                description = ?,
+                quantity = ?
             WHERE id = ?;
             """;
 
     private static final String FIND_ALL_SQL = """
             SELECT id,
-                first_name,
-                last_name,
-                email,
-                birthdate,
-                sex,
-                city
-            FROM store_catalog.customer
+                product_name,
+                price,
+                description,
+                quantity
+            FROM store_catalog.product
             """;
     private static final String FIND_BY_ID_SQL = FIND_ALL_SQL + """
             WHERE id = ?;
             """;
 
-    private CustomerDao() {
+    private ProductDao() {
     }
+
 
     public boolean delete(int id) {
         try (var connection = ConnectionManager.get(); var preparedStatement = connection.prepareStatement(DELETE_SQL)) {
-            preparedStatement.setInt(1, id);
+            preparedStatement.setLong(1, id);
             return preparedStatement.executeUpdate() > 0;
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public Customer save(Customer customer) {
+    public Product save(Product product) {
         try (var connection = ConnectionManager.get(); var preparedStatement = connection.prepareStatement(SAVE_SQL, Statement.RETURN_GENERATED_KEYS)) {
-            preparedStatement.setString(1, customer.getFirstName());
-            preparedStatement.setString(2, customer.getLastName());
-            preparedStatement.setString(3, customer.getEmail());
-            preparedStatement.setDate(4, Date.valueOf(customer.getBirthdate()));
-            preparedStatement.setString(5, customer.getSex());
-            preparedStatement.setString(6, customer.getCity());
+            preparedStatement.setString(1, product.getProductName());
+            preparedStatement.setBigDecimal(2, product.getPrice());
+            preparedStatement.setString(3, product.getDescription());
+            preparedStatement.setInt(4, product.getQuantity());
             preparedStatement.executeUpdate();
             var generatedKeys = preparedStatement.getGeneratedKeys();
             if (generatedKeys.next()) {
-                customer.setId(generatedKeys.getInt("id"));
+                product.setId(generatedKeys.getLong("id"));
             }
-            return customer;
+            return product;
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public void update(Customer customer) {
+    public void update(Product product) {
         try (var connection = ConnectionManager.get();
              var preparedStatement = connection.prepareStatement(UPDATE_SQL)) {
-            preparedStatement.setString(1, customer.getFirstName());
-            preparedStatement.setString(2, customer.getLastName());
-            preparedStatement.setString(3, customer.getEmail());
-            preparedStatement.setDate(4, Date.valueOf(customer.getBirthdate()));
-            preparedStatement.setString(5, customer.getSex());
-            preparedStatement.setString(6, customer.getCity());
-            preparedStatement.setInt(7, customer.getId());
+            preparedStatement.setString(1, product.getProductName());
+            preparedStatement.setBigDecimal(2, product.getPrice());
+            preparedStatement.setString(3, product.getDescription());
+            preparedStatement.setInt(4, product.getQuantity());
+            preparedStatement.setLong(5, product.getId());
             preparedStatement.executeUpdate();
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public List<Customer> findAll(CustomerFilter filter) {
+    public List<Product> findAll(ProductFilter filter) {
         List<Object> parameters = new ArrayList<>();
         parameters.add(filter.limit());
         parameters.add(filter.offset());
@@ -109,58 +105,56 @@ public class CustomerDao {
                 preparedStatement.setObject(i + 1, parameters.get(i));
             }
             var resultSet = preparedStatement.executeQuery();
-            List<Customer> customers = new ArrayList<>();
+            List<Product> products = new ArrayList<>();
             while (resultSet.next()) {
-                customers.add(buildCustomer(resultSet));
+                products.add(buildProduct(resultSet));
             }
-            return customers;
+            return products;
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public List<Customer> findAll() {
+    public List<Product> findAll() {
         try (var connection = ConnectionManager.get();
              var preparedStatement = connection.prepareStatement(FIND_ALL_SQL)) {
             var resultSet = preparedStatement.executeQuery();
-            List<Customer> customers = new ArrayList<>();
+            List<Product> products = new ArrayList<>();
             while (resultSet.next()) {
-                customers.add(buildCustomer(resultSet));
+                products.add(buildProduct(resultSet));
             }
-            return customers;
+            return products;
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public Optional<Customer> findById(int id) {
+    public Optional<Product> findById(int id) {
         try (var connection = ConnectionManager.get();
              var preparedStatement = connection.prepareStatement(FIND_BY_ID_SQL)) {
-            preparedStatement.setInt(1, id);
+            preparedStatement.setLong(1, id);
             var resultSet = preparedStatement.executeQuery();
-            Customer customer = null;
+            Product product = null;
             if (resultSet.next()) {
-                customer = buildCustomer(resultSet);
+                product = buildProduct(resultSet);
             }
-            return Optional.ofNullable(customer);
+            return Optional.ofNullable(product);
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public static CustomerDao getInstance() {
+    public static ProductDao getInstance() {
         return INSTANCE;
     }
 
-    private static Customer buildCustomer(ResultSet resultSet) throws SQLException {
-        return new Customer(
-                resultSet.getInt("id"),
-                resultSet.getString("first_name"),
-                resultSet.getString("last_name"),
-                resultSet.getString("email"),
-                resultSet.getDate("birthdate").toLocalDate(),
-                resultSet.getString("sex"),
-                resultSet.getString("city")
+    private static Product buildProduct(ResultSet resultSet) throws SQLException {
+        return new Product(
+                resultSet.getLong("id"),
+                resultSet.getString("product_name"),
+                resultSet.getBigDecimal("price"),
+                resultSet.getString("description"),
+                resultSet.getInt("quantity")
         );
     }
 }

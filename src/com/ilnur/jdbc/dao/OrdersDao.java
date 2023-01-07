@@ -1,100 +1,96 @@
 package com.ilnur.jdbc.dao;
 
-import com.ilnur.jdbc.dto.CustomerFilter;
-import com.ilnur.jdbc.entity.Customer;
+import com.ilnur.jdbc.dto.OrdersFilter;
+import com.ilnur.jdbc.entity.Orders;
 import com.ilnur.jdbc.exception.DaoException;
 import com.ilnur.jdbc.util.ConnectionManager;
 
-import java.sql.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class CustomerDao {
+public class OrdersDao {
 
-    private static final CustomerDao INSTANCE = new CustomerDao();
+    private static final OrdersDao INSTANCE = new OrdersDao();
+
     private static final String DELETE_SQL = """
-            DELETE FROM store_catalog.customer
+            DELETE FROM store_catalog.orders
             WHERE id = ?
             """;
 
     private static final String SAVE_SQL = """
-            INSERT INTO store_catalog.customer (first_name, last_name, email, birthdate, sex, city)
-            VALUES (?, ?, ?, ?, ?, ?);
+            INSERT INTO store_catalog.orders (customer_id, sum, or_created_at, status)
+            VALUES (?, ?, ?, ?);
             """;
     private static final String UPDATE_SQL = """
-            UPDATE store_catalog.customer
-            SET first_name = ?,
-                last_name = ?,
-                email = ?,
-                birthdate = ?,
-                sex = ?,
-                city = ?
+            UPDATE store_catalog.orders
+            SET customer_id = ?,
+                sum = ?,
+                or_created_at = ?,
+                status = ?
             WHERE id = ?;
             """;
 
     private static final String FIND_ALL_SQL = """
             SELECT id,
-                first_name,
-                last_name,
-                email,
-                birthdate,
-                sex,
-                city
-            FROM store_catalog.customer
+                customer_id,
+                sum,
+                or_created_at,
+                status
+            FROM store_catalog.orders
             """;
     private static final String FIND_BY_ID_SQL = FIND_ALL_SQL + """
             WHERE id = ?;
             """;
 
-    private CustomerDao() {
+    private OrdersDao() {
     }
 
     public boolean delete(int id) {
         try (var connection = ConnectionManager.get(); var preparedStatement = connection.prepareStatement(DELETE_SQL)) {
-            preparedStatement.setInt(1, id);
+            preparedStatement.setLong(1, id);
             return preparedStatement.executeUpdate() > 0;
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public Customer save(Customer customer) {
+    public Orders save(Orders orders) {
         try (var connection = ConnectionManager.get(); var preparedStatement = connection.prepareStatement(SAVE_SQL, Statement.RETURN_GENERATED_KEYS)) {
-            preparedStatement.setString(1, customer.getFirstName());
-            preparedStatement.setString(2, customer.getLastName());
-            preparedStatement.setString(3, customer.getEmail());
-            preparedStatement.setDate(4, Date.valueOf(customer.getBirthdate()));
-            preparedStatement.setString(5, customer.getSex());
-            preparedStatement.setString(6, customer.getCity());
+            preparedStatement.setInt(1, orders.getCustomerId());
+            preparedStatement.setBigDecimal(2, orders.getSum());
+            preparedStatement.setTimestamp(3, Timestamp.valueOf(orders.getOrCreatedAt()));
+            preparedStatement.setString(4, orders.getStatus());
+            preparedStatement.setLong(5, orders.getId());
             preparedStatement.executeUpdate();
             var generatedKeys = preparedStatement.getGeneratedKeys();
             if (generatedKeys.next()) {
-                customer.setId(generatedKeys.getInt("id"));
+                orders.setId(generatedKeys.getLong("id"));
             }
-            return customer;
+            return orders;
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public void update(Customer customer) {
+    public void update(Orders orders) {
         try (var connection = ConnectionManager.get();
              var preparedStatement = connection.prepareStatement(UPDATE_SQL)) {
-            preparedStatement.setString(1, customer.getFirstName());
-            preparedStatement.setString(2, customer.getLastName());
-            preparedStatement.setString(3, customer.getEmail());
-            preparedStatement.setDate(4, Date.valueOf(customer.getBirthdate()));
-            preparedStatement.setString(5, customer.getSex());
-            preparedStatement.setString(6, customer.getCity());
-            preparedStatement.setInt(7, customer.getId());
+            preparedStatement.setInt(1, orders.getCustomerId());
+            preparedStatement.setBigDecimal(2, orders.getSum());
+            preparedStatement.setTimestamp(3, Timestamp.valueOf(orders.getOrCreatedAt()));
+            preparedStatement.setString(4, orders.getStatus());
             preparedStatement.executeUpdate();
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public List<Customer> findAll(CustomerFilter filter) {
+    public List<Orders> findAll(OrdersFilter filter) {
         List<Object> parameters = new ArrayList<>();
         parameters.add(filter.limit());
         parameters.add(filter.offset());
@@ -109,58 +105,56 @@ public class CustomerDao {
                 preparedStatement.setObject(i + 1, parameters.get(i));
             }
             var resultSet = preparedStatement.executeQuery();
-            List<Customer> customers = new ArrayList<>();
+            List<Orders> orders = new ArrayList<>();
             while (resultSet.next()) {
-                customers.add(buildCustomer(resultSet));
+                orders.add(buildOrders(resultSet));
             }
-            return customers;
+            return orders;
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public List<Customer> findAll() {
+    public List<Orders> findAll() {
         try (var connection = ConnectionManager.get();
              var preparedStatement = connection.prepareStatement(FIND_ALL_SQL)) {
             var resultSet = preparedStatement.executeQuery();
-            List<Customer> customers = new ArrayList<>();
+            List<Orders> orders = new ArrayList<>();
             while (resultSet.next()) {
-                customers.add(buildCustomer(resultSet));
+                orders.add(buildOrders(resultSet));
             }
-            return customers;
+            return orders;
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public Optional<Customer> findById(int id) {
+    public Optional<Orders> findById(int id) {
         try (var connection = ConnectionManager.get();
              var preparedStatement = connection.prepareStatement(FIND_BY_ID_SQL)) {
-            preparedStatement.setInt(1, id);
+            preparedStatement.setLong(1, id);
             var resultSet = preparedStatement.executeQuery();
-            Customer customer = null;
+            Orders orders = null;
             if (resultSet.next()) {
-                customer = buildCustomer(resultSet);
+                orders = buildOrders(resultSet);
             }
-            return Optional.ofNullable(customer);
+            return Optional.ofNullable(orders);
         } catch (SQLException throwables) {
             throw new DaoException(throwables);
         }
     }
 
-    public static CustomerDao getInstance() {
+    public static OrdersDao getInstance() {
         return INSTANCE;
     }
 
-    private static Customer buildCustomer(ResultSet resultSet) throws SQLException {
-        return new Customer(
-                resultSet.getInt("id"),
-                resultSet.getString("first_name"),
-                resultSet.getString("last_name"),
-                resultSet.getString("email"),
-                resultSet.getDate("birthdate").toLocalDate(),
-                resultSet.getString("sex"),
-                resultSet.getString("city")
+    private static Orders buildOrders(ResultSet resultSet) throws SQLException {
+        return new Orders(
+                resultSet.getLong("id"),
+                resultSet.getInt("customer_id"),
+                resultSet.getBigDecimal("sum"),
+                resultSet.getTimestamp("or_created_at").toLocalDateTime(),
+                resultSet.getString("status")
         );
     }
 }
